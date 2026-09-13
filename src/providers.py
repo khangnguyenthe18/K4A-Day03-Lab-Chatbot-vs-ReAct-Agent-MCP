@@ -14,7 +14,6 @@ if sys.stdout.encoding != 'utf-8':
         sys.stdout.reconfigure(encoding='utf-8')
     except Exception:
         pass
-
 load_dotenv()
 
 class BaseLLMProvider:
@@ -32,13 +31,63 @@ class MockOfflineProvider(BaseLLMProvider):
         self.model_name = "Offline-Mock-Model-2026"
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
-        return f"[Mock Chatbot Response]: Xin chào! Tôi đã nhận được câu hỏi '{prompt}'. (Chế độ Chatbot không có Tool tra cứu dữ liệu thời gian thực)."
+        return f"[Mock Chatbot Response]: Xin chào! Tôi đã nhận được câu hỏi '{prompt}'. (Chế độ Chatbot trả lời từ kiến thức nền tảng, không có Tool tra cứu dữ liệu thời gian thực)."
 
     def generate_with_tools(self, prompt: str, tools_schema: List[Dict[str, Any]], system_prompt: str = "") -> Dict[str, Any]:
         prompt_lower = prompt.lower()
         
-        # Mô phỏng nhận diện intent gọi Tool
-        if "sv2026001" in prompt_lower and "đặt lịch" in prompt_lower:
+        # Mô phỏng nhận diện intent gọi Tool cho đề tài Gym Workout Assistant
+        if "gym999" in prompt_lower:
+            return {
+                "type": "tool_call",
+                "tool_name": "fitness_profile_query",
+                "arguments": {"member_id": "GYM999"},
+                "thought": "Người dùng yêu cầu tra cứu hội viên GYM999. Tôi sẽ gọi tool fitness_profile_query để kiểm tra."
+            }
+        elif "gym002" in prompt_lower and ("tạo" in prompt_lower or "lịch tập" in prompt_lower or "chương trình" in prompt_lower):
+            # Nếu trong prompt có thông tin thể trạng từ bước trước (đã tra cứu)
+            if "quan sát" in prompt_lower or "kết quả" in prompt_lower or "chấn thương" in prompt_lower:
+                return {
+                    "type": "tool_call",
+                    "tool_name": "create_workout_plan",
+                    "arguments": {
+                        "member_id": "GYM002",
+                        "split_type": "Upper-Lower an toàn",
+                        "days_per_week": 3,
+                        "target_goal": "Giảm mỡ, săn chắc",
+                        "safety_notes": "Tránh Squat nặng và nhảy cao do chấn thương gối nhẹ, ưu tiên Leg Press góc hẹp và bài tập cô lập."
+                    },
+                    "thought": "Sau khi tra cứu hồ sơ thấy GYM002 có chấn thương khớp gối, tôi gọi tool create_workout_plan với lưu ý an toàn."
+                }
+            else:
+                return {
+                    "type": "tool_call",
+                    "tool_name": "fitness_profile_query",
+                    "arguments": {"member_id": "GYM002"},
+                    "thought": "Người dùng muốn lên lịch tập phù hợp thể trạng cho GYM002. Cần tra cứu hồ sơ GYM002 trước để xem tiền sử chấn thương."
+                }
+        elif "gym001" in prompt_lower and ("tạo" in prompt_lower or "push-pull-legs" in prompt_lower):
+            return {
+                "type": "tool_call",
+                "tool_name": "create_workout_plan",
+                "arguments": {
+                    "member_id": "GYM001",
+                    "split_type": "Push-Pull-Legs",
+                    "days_per_week": 4,
+                    "target_goal": "Tăng cơ (Hypertrophy)",
+                    "safety_notes": "Tập trung tăng tiến mức tạ (progressive overload) an toàn."
+                },
+                "thought": "Người dùng yêu cầu tạo lịch tập 4 buổi/tuần Push-Pull-Legs cho GYM001. Tôi sẽ gọi tool create_workout_plan."
+            }
+        elif "gym001" in prompt_lower or "hồ sơ" in prompt_lower:
+            return {
+                "type": "tool_call",
+                "tool_name": "fitness_profile_query",
+                "arguments": {"member_id": "GYM001"},
+                "thought": "Người dùng muốn tra cứu hồ sơ thể trạng hội viên GYM001. Tôi sẽ gọi tool fitness_profile_query."
+            }
+        # Hỗ trợ tương thích ngược cho starter code mẫu (VinUni)
+        elif "sv2026001" in prompt_lower and "đặt lịch" in prompt_lower:
             return {
                 "type": "tool_call",
                 "tool_name": "schedule_appointment",
@@ -55,8 +104,8 @@ class MockOfflineProvider(BaseLLMProvider):
         else:
             return {
                 "type": "text",
-                "content": f"[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-                "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool."
+                "content": "[Mock Agent Response]: Bài tập Compound (đa khớp như Squat, Bench Press, Deadlift) tác động cùng lúc nhiều nhóm cơ, giúp xây dựng sức mạnh nền tảng. Bài tập Isolation (đơn khớp như Bicep Curl, Leg Extension) tập trung phát triển tối đa một cơ bắp cụ thể.",
+                "thought": "Câu hỏi kiến thức chung về thể hình, trả lời trực tiếp không cần gọi Tool."
             }
 
 
@@ -64,7 +113,7 @@ class GeminiProvider(BaseLLMProvider):
     """Google Gemini Provider (Native Tool Calling với Google GenAI SDK)"""
     def __init__(self, api_key: str = None, model: str = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.model_name = model or os.getenv("LLM_MODEL") or "gemini-2.5-flash"
+        self.model_name = model or os.getenv("LLM_MODEL") or "gemini-3.6-flash"
 
     def generate(self, prompt: str, system_prompt: str = "") -> str:
         if not self.api_key or self.api_key == "your_gemini_api_key_here":

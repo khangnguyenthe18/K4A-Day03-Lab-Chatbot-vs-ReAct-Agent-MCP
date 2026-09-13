@@ -1,0 +1,37 @@
+[
+  {
+    "id": "TC01",
+    "type": "direct_query",
+    "question": "Chào bạn, bạn có thể giải thích sự khác biệt cơ bản giữa bài tập Compound (đa khớp) và Isolation (cô lập) trong tập gym được không?",
+    "expected_behavior": "Chatbot trả lời trực tiếp từ System Prompt và kiến thức thể hình, không cần gọi bất kỳ Tool nào.",
+    "complexity": "Low"
+  },
+  {
+    "id": "TC02",
+    "type": "single_tool_query",
+    "question": "Hãy tra cứu hồ sơ thể trạng và mục tiêu tập luyện của hội viên GYM001.",
+    "expected_behavior": "Agent nhận diện nhu cầu tra cứu, tự động phát sinh Tool Call 'fitness_profile_query' với mã hội viên 'GYM001'.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC03",
+    "type": "workout_scheduling",
+    "question": "Hãy tạo lịch tập 4 buổi/tuần theo phương pháp Push-Pull-Legs cho hội viên GYM001 với mục tiêu tăng cơ (hypertrophy).",
+    "expected_behavior": "Agent tự động phát sinh Tool Call 'create_workout_plan' với đúng các tham số: member_id, split_type, days_per_week, target_goal.",
+    "complexity": "Medium"
+  },
+  {
+    "id": "TC04",
+    "type": "multi_step_reasoning",
+    "question": "Hội viên GYM002 muốn lên lịch tập phù hợp với thể trạng hiện tại và chấn thương nếu có. Bạn hãy kiểm tra hồ sơ trước rồi tạo chương trình tập luyện an toàn nhất cho hội viên này.",
+    "expected_behavior": "Agent thực hiện chuỗi suy luận ReAct đa bước: Tra cứu hồ sơ hội viên GYM002 trước để phát hiện tiền sử chấn thương (khớp gối), sau đó tiến hành tạo lịch tập an toàn thay thế các bài tập ảnh hưởng khớp gối.",
+    "complexity": "High"
+  },
+  {
+    "id": "TC05",
+    "type": "edge_case_handling",
+    "question": "Hãy tra cứu thông tin hồ sơ thể trạng của hội viên có mã GYM999.",
+    "expected_behavior": "Agent nhận kết quả NOT_FOUND từ Tool và đưa ra phản hồi lịch sự, chính xác không bịa đặt dữ liệu hội viên.",
+    "complexity": "Medium"
+  }
+]

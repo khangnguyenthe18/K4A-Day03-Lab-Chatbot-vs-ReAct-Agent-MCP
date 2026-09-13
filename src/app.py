@@ -121,19 +121,39 @@ def run_react_agent(user_query: str, provider, mcp_server: MCPAcademicServer) ->
                 if obs_data.get("status") == "SUCCESS":
                     if "data" in obs_data:
                         d = obs_data["data"]
-                        final_answer = (
-                            f"Kết quả tra cứu cho sinh viên {obs_data.get('student_id', '')} ({d.get('full_name', '')}): "
-                            f"Lớp {d.get('class', '')}, GPA: {d.get('gpa', '')}, Email: {d.get('email', '')}, "
-                            f"Trạng thái: {d.get('status', '')}, Cố vấn: {d.get('advisor', '')}."
-                        )
+                        if "gpa" in d:
+                            final_answer = (
+                                f"Kết quả tra cứu cho sinh viên {obs_data.get('student_id', '')} ({d.get('full_name', '')}): "
+                                f"Lớp {d.get('class', '')}, GPA: {d.get('gpa', '')}, Email: {d.get('email', '')}, "
+                                f"Trạng thái: {d.get('status', '')}, Cố vấn: {d.get('advisor', '')}."
+                            )
+                        else:
+                            final_answer = (
+                                f"Thông tin hồ sơ hội viên {obs_data.get('member_id', '')} ({d.get('full_name', '')}): "
+                                f"Tuổi {d.get('age', '')}, Thể trạng: {d.get('height_cm', '')}cm / {d.get('weight_kg', '')}kg, "
+                                f"Kinh nghiệm: {d.get('experience_level', '')}, Mục tiêu: {d.get('target_goal', '')}, "
+                                f"Chấn thương: {d.get('injuries', 'Không có')}, Số buổi/tuần: {d.get('preferred_days_per_week', '')} buổi, HLV: {d.get('trainer', '')}."
+                            )
                     elif "message" in obs_data:
                         final_answer = obs_data["message"]
                     else:
                         final_answer = f"Đã hoàn tất xử lý qua MCP Server: {json.dumps(obs_data, ensure_ascii=False)}"
                 elif obs_data.get("status") == "NOT_FOUND":
                     final_answer = obs_data.get("message", "Không tìm thấy thông tin sinh viên yêu cầu.")
-                else:
-                    final_answer = f"Phản hồi từ công cụ: {json.dumps(obs_data, ensure_ascii=False)}"
+                # Nếu dùng LLM thật và có kết quả dữ liệu từ Tool, yêu cầu LLM tổng hợp câu trả lời sâu sắc & cá nhân hóa
+                if provider.__class__.__name__ != "MockOfflineProvider" and obs_data.get("status") == "SUCCESS":
+                    try:
+                        synth_prompt = (
+                            f"Yêu cầu từ hội viên: '{user_query}'\n\n"
+                            f"Dữ liệu thực tế quan sát được từ công cụ '{tool_name}':\n{obs_str}\n\n"
+                            f"Hãy sử dụng dữ liệu quan sát trên để trả lời chi tiết, chuyên nghiệp và cá nhân hóa cho hội viên. "
+                            f"Nếu có chấn thương, hãy nêu rõ bài tập thay thế an toàn và hướng dẫn cụ thể số hiệp/số lần tập (sets/reps)."
+                        )
+                        llm_final = provider.generate(synth_prompt, system_prompt=REACT_AGENT_SYSTEM_PROMPT)
+                        if llm_final and not llm_final.startswith("["):
+                            final_answer = llm_final
+                    except Exception:
+                        pass
             
             trace_logs.append({
                 "step": step,
@@ -177,17 +197,18 @@ if __name__ == "__main__":
     print(f"✅ Đã tải thành công {len(tests)} Test Cases thử nghiệm.\n")
     
     if "--interactive" in sys.argv:
-        print("🎮 [INTERACTIVE MODE] Trò chuyện trực tiếp với ReAct Agent:")
+        print("🎮 [INTERACTIVE MODE] Trò chuyện trực tiếp với Gym ReAct Agent:")
         print("💡 Gợi ý câu hỏi thử nghiệm:")
-        print("   - Câu hỏi chung: 'Quy chế học vụ VinUni yêu cầu bao nhiêu tín chỉ?'")
-        print("   - Tra cứu học vụ: 'Hãy tra cứu thông tin học vụ của sinh viên SV2026001'")
-        print("   - Đặt lịch hẹn: 'Đặt lịch hẹn tư vấn cho SV2026001 vào 14:00 ngày 15/09/2026'")
+        print("   - Câu hỏi chung: 'Bài tập Compound khác gì Isolation?'")
+        print("   - Tra cứu thể trạng: 'Hãy tra cứu hồ sơ thể trạng của hội viên GYM001'")
+        print("   - Tạo lịch tập: 'Tạo lịch tập 4 buổi/tuần Push-Pull-Legs tăng cơ cho GYM001'")
+        print("   - Lên lịch theo chấn thương: 'Kiểm tra hồ sơ GYM002 và tạo lịch tập an toàn'")
         print("   - Gõ 'exit' hoặc 'quit' để kết thúc phiên trò chuyện.\n")
         while True:
             try:
-                user_input = input("👤 Sinh viên hỏi: ").strip()
+                user_input = input("🏋️ Hội viên hỏi: ").strip()
                 if not user_input or user_input.lower() in ["exit", "quit"]:
-                    print("👋 Tạm biệt! Kết thúc phiên trò chuyện.")
+                    print("👋 Tạm biệt! Hẹn gặp lại bạn ở buổi tập tiếp theo.")
                     break
                 logs = run_react_agent(user_input, provider, mcp_server)
                 save_waterfall_trace(logs)
@@ -200,7 +221,7 @@ if __name__ == "__main__":
         todo_count = 0
         all_traces = []
         
-        for tc in tests:
+        for idx, tc in enumerate(tests):
             print(f"\n==================================================")
             print(f"🧪 [{tc['id']}] Loại test: {tc['type']} (Độ phức tạp: {tc['complexity']})")
             print(f"📌 Kỳ vọng: {tc['expected_behavior']}")
@@ -214,6 +235,8 @@ if __name__ == "__main__":
                 logs = run_react_agent(tc["question"], provider, mcp_server)
                 all_traces.extend(logs)
                 completed_count += 1
+                if idx < len(tests) - 1 and provider.__class__.__name__ != "MockOfflineProvider":
+                    time.sleep(3)
                 
         print(f"\n==================================================")
         print(f"📊 [KẾT QUẢ TEST SUITE]: Đã thực thi {completed_count}/{len(tests)} Test Cases | {todo_count} Test Cases đang chờ điền câu hỏi (TODO)")

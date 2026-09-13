@@ -1,29 +1,35 @@
 [
   {
     "step": 1,
-    "query": "Chào bạn, bạn có thể giới thiệu quy chế học vụ cơ bản của Đại học VinUni không?",
-    "action_type": "FINAL_ANSWER",
-    "thought": "Câu hỏi chung về quy chế học vụ, trả lời trực tiếp không cần gọi Tool.",
-    "output": "[Mock Agent Response]: Xin chào! Quy chế học vụ VinUni yêu cầu sinh viên tích lũy tối thiểu 120 tín chỉ và duy trì GPA trên 2.0 để tốt nghiệp.",
-    "latency_ms": 2845.93
-  },
-  {
-    "step": 1,
-    "query": "Hãy tra cứu thông tin học vụ của sinh viên SV2026001.",
+    "query": "Hãy tra cứu hồ sơ thể trạng và mục tiêu tập luyện của hội viên GYM001.",
     "action_type": "TOOL_EXECUTION",
-    "tool_name": "academic_query",
+    "tool_name": "fitness_profile_query",
     "arguments": {
-      "student_id": "SV2026001"
+      "member_id": "GYM001"
     },
-    "observation": {},
-    "latency_ms": 799.12
+    "observation": {
+      "status": "SUCCESS",
+      "member_id": "GYM001",
+      "data": {
+        "full_name": "Nguyễn Văn An",
+        "age": 24,
+        "weight_kg": 70,
+        "height_cm": 175,
+        "experience_level": "Intermediate (1 năm tập luyện)",
+        "target_goal": "Tăng cơ (Hypertrophy)",
+        "injuries": "Không có",
+        "preferred_days_per_week": 4,
+        "trainer": "HLV Tuấn Anh"
+      }
+    },
+    "latency_ms": 2838.45
   },
   {
     "step": 2,
-    "query": "Hãy tra cứu thông tin học vụ của sinh viên SV2026001.",
+    "query": "Hãy tra cứu hồ sơ thể trạng và mục tiêu tập luyện của hội viên GYM001.",
     "action_type": "FINAL_ANSWER",
     "thought": "Tổng hợp kết quả từ MCP Server thành công.",
-    "output": "Chưa thể trả lời chi tiết do chưa nhận được dữ liệu từ MCP Server (hãy hoàn thành TODO 2.1).",
+    "output": "Thông tin hồ sơ hội viên GYM001 (Nguyễn Văn An): Tuổi 24, Thể trạng: 175cm / 70kg, Kinh nghiệm: Intermediate (1 năm tập luyện), Mục tiêu: Tăng cơ (Hypertrophy), Chấn thương: Không có, Số buổi/tuần: 4 buổi, HLV: HLV Tuấn Anh.",
     "latency_ms": 10.0
   }
 ]
